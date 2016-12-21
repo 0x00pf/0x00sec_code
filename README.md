@@ -42,7 +42,8 @@ PolyCrypt. Experiments on Self-Modifying Programs : https://0x00sec.org/t/polycr
 
 Source code at crypter
 
-Ibi Crypter. Instruction By Instruction Crypter PoC: 
+IbI Crypter. Instruction By Instruction Crypter PoC:  https://0x00sec.org/t/ibi-crypter-a-jit-crypter-poc/1373
+
 source code at ibi_crypter
 # CyberPranks
 

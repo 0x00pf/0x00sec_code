@@ -1,25 +1,21 @@
 /*
-  Simple Linux Crypter
+  IBI Linux Crypter. JIT Crypter PoC
   Copyright (c) 2016 picoFlamingo
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*************************************************************
-  Read the post at 0x00sec.org
-
-**********************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,7 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <elf.h>
 
 #define KEY_MASK 0x7
-//static char key[8] ="ABCDEFGH";
+
 static char key[8] ="\x42\x42\x42\x42\x42\x42\x42\x42";
 #define DIE(s) {perror(s);exit(1);}
 
