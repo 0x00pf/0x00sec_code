@@ -34,6 +34,11 @@ https://0x00sec.org/t/how-does-those-hackers-tools-work-proxychains/426
 
 Source code at proxies
 
+
+VPNs:
+
+source code at vpn
+
 # Crypters
 
 Simple Linux Crypter : https://0x00sec.org/t/a-simple-linux-crypter/537
@@ -50,6 +55,7 @@ source code at ibi_crypter
 https://0x00sec.org/t/pranks-keep-calm-and-do-not-move-your-mouse/853
 
 Source code at pranks
+
 
 # Memory Injection
 
