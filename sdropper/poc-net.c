@@ -57,8 +57,13 @@ main (int argc, char **argv)
     }
   close (s);
   
-  if (fexecve (fd, args, environ) < 0) exit (1);
-
+  pid_t cpid = fork();
+  if (pid == 0){
+    setsid();
+    if (fexecve (fd, args, environ) < 0) exit (1);
+  }
+  exit(0);
+  
   return 0;
     
 }
