@@ -9,15 +9,15 @@ Part I : https://0x00sec.org/t/remote-shells-part-i/269/1
 
 Part II. Crypt your link: https://0x00sec.org/t/remote-shells-part-ii-crypt-your-link/306
 
-Source code at remote_shell
+Source code at `remote_shell`
 
 Part III. Shell Access your Phone : https://0x00sec.org/t/remote-shells-part-iii-shell-access-your-phone/508
 
-Source code at remote_shell
+Source code at `remote_shell`
 
 Part IV. The Invisible Remote Shell : https://0x00sec.org/t/remote-shells-part-iv-the-invisible-remote-shell/743
 
-Source code at remote_shell
+Source code at `remote_shell`
 
 ## ELFun... having fun with ELF
 Post available at:
@@ -49,7 +49,7 @@ Source code at crypter
 
 IbI Crypter. Instruction By Instruction Crypter PoC:  https://0x00sec.org/t/ibi-crypter-a-jit-crypter-poc/1373
 
-source code at ibi_crypter
+source code at `ibi_crypter`
 # CyberPranks
 
 https://0x00sec.org/t/pranks-keep-calm-and-do-not-move-your-mouse/853
@@ -60,6 +60,11 @@ Source code at pranks
 # Memory Injection
 
 https://0x00sec.org/t/linux-infecting-running-processes/1097
-Source code at mem_inject
+Source code at `mem_inject`
 
+# Minimal Dropper
+
+Paper not published yet
+Dource code at `min_dropper`
 .
+
