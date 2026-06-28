@@ -1,4 +1,4 @@
-# Copying code without touching permissions
+# Copying code on Read Only memory without using mprotect
 
 When a program needs to generate code and run it, several steps are required. The program needs to allocate memory with read, write, and execution permissions, and perhaps remove the write permission afterward to resemble a normal program. Alternatively, it has to allocate memory with read and write permissions, copy the code there, and then change the permissions to enable read and execution in order to be able to actually run the code. This last case is necessary when W^X protection is enabled.
 
@@ -23,13 +23,15 @@ The cool thing about this process is that our page fault user space code can wri
 
 # Use cases
 
-Before showing you the code, let me introduce a couple of use cases. A traditional crypter will have a program header in the ELF file containing the encrypted code. Generally, if the program header has all three permissions, that would be suspicious, so it will likely have read and write permissions. That has the advantage that static analysis tools won't look into that part of the program immediately.
+Before showing you the code, let me introduce a couple of use cases. I had briefly mentioned in the introduction but it worth to elaborate them a littl bit. 
+
+A traditional crypter will have a program header in the ELF file containing the encrypted code. Generally, if the program header has all three permissions, that would be suspicious, so it will likely have read and write permissions. That has the advantage that static analysis tools won't look into that part of the program immediately.
 
 When the program starts, the `stub` gets executed and needs to write into the memory where the encrypted program header was loaded. If the program header has read and write permission, it can do that straight away, but then it will need to run `mprotect` to give it execution permission. Otherwise, the code cannot be executed.
 
 Another case may be malware that gets code from a C2 server to execute. The code isn't installed in the malware itself, so analysis of the binary won't reveal much about what the malware does. Let's assume the W^X protection is in place, so the malware has to allocate memory with read and write permissions (it cannot give all three permissions to the memory block), then download the code and copy it into that region. Finally, it has to remove the write permission and add the execution permission using `mprotect`.
 
-Overall, the use of `mprotect` is something to monitor because you usually don't need to use that system call. Normally, whatever permissions you need, you just give them when allocating the memory with `mmap`, and it’s uncommon to have to change them afterward. Moreover, giving execution permissions at runtime, even when it may be completely legitimate, is also considered suspicious because normal programs don't self-modify or get code to execute in non-standard ways, i.e., using functions like `execve` or `dlopen/dlsym`.
+Overall, the use of `mprotect` is something to monitor because you usually don't need to use that system call. Normally, whatever permissions you need, you just give them when allocating the memory with `mmap`, and it’s uncommon to have to change them afterward. Moreover, giving execution permissions at runtime, even when it may be completely legitimate, is also considered suspicious because normal programs don't self-modify or get code to execute in non-standard ways, i.e., not using functions like `execve` or `dlopen/dlsym`.
 
 # PoC, Copying and Running Code Without Changing Permissions
 
@@ -63,7 +65,7 @@ unsigned int x86_hello_bin_len = 49;
 
 ```
 
-Nothing special here, just the headers needed to compile the PoC and the shell code we’ll use for the demonstration—in this case, the usual `Hello, world!` binary for Intel `x86_64`. I got it from Chapter 8 of [Heavy Wizardry 101](https://nostarch.com/heavy-wizardry-101) ;) , but you can write your own. 
+Nothing special here, just the headers needed to compile the PoC and the shell code we’ll use for the demonstration—in this case, the usual `Hello, world!` binary for Intel `x86_64`. I got it from Chapter 8 of [Heavy Wizardry 101](https://nostarch.com/heavy-wizardry-101) ;) . You can write your own, but it was a got opportunity to promote my book XD.
 
 Next, we create and initialize the `userfaultfd`.
 
@@ -71,7 +73,6 @@ Next, we create and initialize the `userfaultfd`.
 int main(void)
 {
   int    uffd; 
-  size_t pagesize = sysconf(_SC_PAGE_SIZE);
   
   if ((uffd = syscall(SYS_userfaultfd, O_CLOEXEC | O_NONBLOCK)) == -1) return 1;
   
@@ -82,12 +83,13 @@ int main(void)
   if (ioctl(uffd, UFFDIO_API, &api) == -1) return 2;
 ```
 
-There is no libC wrapper for this system call, so we have to use the general `syscall` function from GNU LibC to call it. Then we set up the API to use with an `ioctl` call, and we’re good to go.
+There is no libC wrapper for this system call, so we have to use the general `syscall` function from GNU LibC to call it. Then we set up the API we want to use with an `ioctl` call, and we’re good to go.
 
 Next, we allocate memory and register our user space page fault handler for that memory range.
 
 ```C
- char *code = mmap(NULL, pagesize, PROT_READ | PROT_EXEC,
+  size_t pagesize = sysconf(_SC_PAGE_SIZE);
+  char *code = mmap(NULL, pagesize, PROT_READ | PROT_EXEC,
 		      MAP_PRIVATE | MAP_ANONYMOUS, -1,0);
   
   struct uffdio_register reg;
@@ -98,7 +100,9 @@ Next, we allocate memory and register our user space page fault handler for that
    if (ioctl(uffd, UFFDIO_REGISTER, &reg) == -1) return 3;
 ```
 
-Note how we’re using standard permissions: read and execute. No write permission, no all permissions set. The registration of the address range is done using another `ioctl`. For this demonstration, we’re using a single page for the sake of simplicity, but you can apply this technique to multiple pages in the exact same way—just change the sizes and make sure that the addresses are page-aligned. The mode can take the following values:
+Note how we’re using standard permissions with `mmap`: read and execute. No write permission, no all permissions set. 
+
+The registration of the address range is done using another `ioctl`. For this demonstration, we’re using a single page for the sake of simplicity, but you can apply this technique to multiple pages in the exact same way—just change the sizes and make sure that the addresses are page-aligned. The mode can take the following values:
 
 - `UFFDIO_REGISTER_MODE_MISSING` — handle missing-page faults.
 - `UFFDIO_REGISTER_MODE_WP` — handle write-protection faults.
@@ -113,11 +117,11 @@ Now, we prepare our payload to be copied.
   memcpy (buf, x86_hello_bin, x86_hello_bin_len);
 ```
 
-All this mechanism works on memory pages, so we need to allocate memory, but it has to be page-aligned. As I said before, we’re using a single page for simplicity, so the size we ask `aligned_alloc` for is the same as the page size. Once we have that page, we copy over the code we want to run. 
+All this mechanism works on memory pages, so we need to allocate memory that is be page-aligned. As I said before, we’re using a single page for simplicity, so the size we ask `aligned_alloc` for is the same as the page size. Once we have that page, we copy over the code we want to run. 
 
 In a real-world program, you may likely read the code from a file or from the network, but the process is the same. You can also store the code inside the ELF and make sure it gets loaded in memory in its own page—playing with the ELF structures. Well, there are a lot of options to have fun with this.
 
-Finally, we just copy the code over using one more `ioctl`.
+Finally, we just copy the code over using one more `ioctl`, actually this assign physical memory to the virtual memory block we allocated and also initializes it.
 
 ```C
   struct uffdio_copy copy;
@@ -140,10 +144,11 @@ Yes, the casting is a bit ugly. Be free to define your own types to make it look
 
 # `userfaultfd`. FD stands for file descriptor.
 
-Yes, the `userfaultfd` creates a File Descriptor to deal with page FAULTs in USER space. What does this mean? Well, that we can actually get events on that file descriptor, and that is the intended way to use this system call. Another thread or the main loop of the application will `select`, `poll`, or just `read` on that file descriptor. Whenever something happens—normally a page fault, but there are a few other events that may happen—the file descriptor gets an event to read with the relevant information, such as the virtual address that was producing the page fault.
+Yes, the `userfaultfd` creates a File Descriptor to deal with page FAULTs in USER space. What does this mean? Well, that we can actually get events on that file descriptor, and that is the intended way to use this system call. Another thread or the main loop of the application will `select`, `poll`, or just `read` on that file descriptor. Whenever something happens (normally a page fault, but there are a few other events that may happen) the file descriptor gets an event to read from that file descriptor with the relevant information, such as the virtual address that was producing the page fault.
 
 This opens the possibility of interesting runtime code modification options.
 
 # SUMMARY
 
-Well, this is what I wanted to say. I just stumbled upon this system call by accident, and it looked like it could be used for this purpose, and it was. I think this is interesting for programs secured with crypters and getting code from memory—those usually have to use funny permissions or call to `mprotect`, which may look suspicious.
+I just stumbled upon this system call by accident, and it looked like it could be used for this purpose, and it was. I think this is interesting for programs secured with crypters and getting code from memory—those usually have to use funny permissions or call to `mprotect`, which may look suspicious. As usual, any comment, correction and feedback in general is welcomed!
+
