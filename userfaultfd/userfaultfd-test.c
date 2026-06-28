@@ -26,7 +26,7 @@ int main(void)
   int    uffd; 
   size_t pagesize = sysconf(_SC_PAGE_SIZE);
   
-  if ((uffd = syscall(SYS_userfaultfd, O_CLOEXEC | O_NONBLOCK)) == -1) return 1;
+  if ((uffd = syscall(SYS_userfaultfd, O_CLOEXEC | O_NONBLOCK | UFFD_USER_MODE_ONLY)) == -1) return 1;
   
   struct uffdio_api api;
   memset (&api,0, sizeof(struct uffdio_api));

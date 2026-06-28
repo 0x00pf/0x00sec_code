@@ -74,7 +74,7 @@ int main(void)
 {
   int    uffd; 
   
-  if ((uffd = syscall(SYS_userfaultfd, O_CLOEXEC | O_NONBLOCK)) == -1) return 1;
+  if ((uffd = syscall(SYS_userfaultfd, O_CLOEXEC | O_NONBLOCK | UFFD_USER_MODE_ONLY)) == -1) return 1;
   
   struct uffdio_api api;
   memset (&api,0, sizeof(struct uffdio_api));
@@ -83,7 +83,9 @@ int main(void)
   if (ioctl(uffd, UFFDIO_API, &api) == -1) return 2;
 ```
 
-There is no libC wrapper for this system call, so we have to use the general `syscall` function from GNU LibC to call it. Then we set up the API we want to use with an `ioctl` call, and we’re good to go.
+There is no libC wrapper for this system call, so we have to use the general `syscall` function from GNU LibC to call it. The flag `UFFD_USER_MODE_ONLY` allows us to use the system call as a regular user, otherwise, depending on the kernel configuration we may need to run the test program as root (actuall `CAP_SYS_PTRACE` is needed).
+
+Then we set up the API we want to use with an `ioctl` call, and we’re good to go.
 
 Next, we allocate memory and register our user space page fault handler for that memory range.
 
