@@ -1,4 +1,4 @@
-# Copying code on Read Only memory without using mprotect
+# Copying code on Read Only memory using `userfaultfd`
 
 When a program needs to generate code and run it, several steps are required. The program needs to allocate memory with read, write, and execution permissions, and perhaps remove the write permission afterward to resemble a normal program. Alternatively, it has to allocate memory with read and write permissions, copy the code there, and then change the permissions to enable read and execution in order to be able to actually run the code. This last case is necessary when W^X protection is enabled.
 
